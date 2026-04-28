@@ -79,12 +79,12 @@ playButton.addEventListener('click', async () => {
     const minuteUnit = getPluralSuffix(currentMinute, 'minute');
 
     const playlist = [
-        getVoicePath(station='h', clipName='at_the_tone'),
-        getVoicePath(station='h', clipName=`${currentHour}`),
-        getVoicePath(station='h', clipName=`${hourUnit}`),
-        getVoicePath(station='h', clipName=`${currentMinute}`),
-        getVoicePath(station='h', clipName=`${minuteUnit}`),
-        getVoicePath(station='h', clipName='jst')
+        getVoicePath('h', 'at_the_tone'),
+        getVoicePath('h', `${currentHour}`),
+        getVoicePath('h', `${hourUnit}`),
+        getVoicePath('h', `${currentMinute}`),
+        getVoicePath('h', `${minuteUnit}`),
+        getVoicePath('h', 'jst')
     ];
 
     console.log('Playing voice sequence...');
