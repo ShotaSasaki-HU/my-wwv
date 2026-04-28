@@ -1,11 +1,15 @@
 const playButton = document.getElementById('playButton');
 
-// Howler.jsを使った音声ファイルの準備
-const testSound = new Howl({
-    src: ['./voice_clips/v_at_the_tone.mp3']
-});
-
 playButton.addEventListener('click', () => {
-    console.log("The button was pushed.")
-    testSound.play();
+    const now = new Date();
+    const currentHour = now.getHours(); // 0-23
+
+    const hourFileName = `./voice_clips/v_${currentHour}.mp3`;
+    console.log('Now playing:', hourFileName)
+
+    const hourSound = new Howl({
+        src: [hourFileName]
+    });
+
+    hourSound.play();
 });
