@@ -65,6 +65,14 @@ function getPluralSuffix(value, word) {
     return value === 1 ? word : word + 's'; // 0は一般的に複数形
 }
 
+// 実行環境に依存せず日本標準時のDateオブジェクトを生成するヘルパー関数
+function getJSTDate() {
+    const now = new Date();
+    // getTimezoneOffset()はUTCとの差分を「分」で返すため，ミリ秒に変換して加算する．
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    return new Date(utcTime + (60 * 60 * 1000 * 9)); // JST
+}
+
 let isAnnouncingVoice = false; // 読み上げ中のフラグ
 
 // 現在時刻のアナウンスを鳴らす関数
@@ -73,7 +81,7 @@ async function playVoiceSequence() {
     if (isAnnouncingVoice) { return; }; // 既に読み上げ中なら，新しい読み上げはキャンセルする．
     isAnnouncingVoice = true;
 
-    const now = new Date();
+    const now = getJSTDate();
     // 声は「0秒より前」に鳴り始めるため，読み上げるべき時間は「次の分」である．
     now.setMinutes(now.getMinutes() + 1);
 
@@ -115,14 +123,14 @@ function startScheduler() {
     console.log("Scheduler started...");
 
     function tick() {
-        const now = new Date();
+        const now = getJSTDate();
         const seconds = now.getSeconds();
         const ms = now.getMilliseconds();
 
         const delayToNextSecond = 1000 - ms; // 次に秒数が切り替わるピッタリまでのミリ秒
 
         setTimeout(() => {
-            const exactNow = new Date();
+            const exactNow = getJSTDate();
             const currentSec = exactNow.getSeconds();
             console.log(currentSec);
 
