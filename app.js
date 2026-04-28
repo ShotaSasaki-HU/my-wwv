@@ -1,5 +1,9 @@
 // app.js
 
+// ==========================================
+// 1. Classes & Blueprints
+// ==========================================
+
 // Web Audio APIを使ったビープ音生成クラス
 class BeepGenerator {
     constructor() {
@@ -53,8 +57,42 @@ class BeepGenerator {
     }
 }
 
-// 音声ファイルをダウンロードしWeb Audio API用の波形データに変換してキャッシュする関数
+// ==========================================
+// 2. Global State & Instances
+// ==========================================
+const playButton = document.getElementById('playButton');
+const beepGen = new BeepGenerator();
 const audioBufferCache = {}; // デコード済みの波形データのキャッシュ
+let isAnnouncingVoice = false; // 読み上げ中のフラグ
+
+// ==========================================
+// 3. Helper Functions
+// ==========================================
+
+// 音声ファイルへのパスを組み立てるヘルパー関数
+function getVoicePath(station, clipName) {
+    const basePath = './voice_clips/'
+    return `${basePath}${station}_${clipName}.mp3`
+}
+
+// 数値が単数形か複数形かを判定して単語に接尾辞を追加するヘルパー関数
+function getPluralSuffix(value, word) {
+    return value === 1 ? word : word + 's'; // 0は一般的に複数形
+}
+
+// 実行環境に依存せず日本標準時のDateオブジェクトを生成するヘルパー関数
+function getJSTDate() {
+    const now = new Date();
+    // getTimezoneOffset()はUTCとの差分を「分」で返すため，ミリ秒に変換して加算する．
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    return new Date(utcTime + (60 * 60 * 1000 * 9)); // JST
+}
+
+// ==========================================
+// 4. Core Logic
+// ==========================================
+
+// 音声ファイルをダウンロードしWeb Audio API用の波形データに変換してキャッシュする関数
 async function loadAudioBuffer(fileName) {
     if (audioBufferCache[fileName]) {
         return audioBufferCache[fileName];
@@ -91,34 +129,6 @@ function playSignalSound(fileName) {
         source.start(); // 再生開始
     });
 }
-
-const playButton = document.getElementById('playButton');
-const beepGen = new BeepGenerator();
-
-// --- ヘルパー関数ココカラ ---
-
-// 音声ファイルへのパスを組み立てるヘルパー関数
-function getVoicePath(station, clipName) {
-    const basePath = './voice_clips/'
-    return `${basePath}${station}_${clipName}.mp3`
-}
-
-// 数値が単数形か複数形かを判定して単語に接尾辞を追加するヘルパー関数
-function getPluralSuffix(value, word) {
-    return value === 1 ? word : word + 's'; // 0は一般的に複数形
-}
-
-// 実行環境に依存せず日本標準時のDateオブジェクトを生成するヘルパー関数
-function getJSTDate() {
-    const now = new Date();
-    // getTimezoneOffset()はUTCとの差分を「分」で返すため，ミリ秒に変換して加算する．
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    return new Date(utcTime + (60 * 60 * 1000 * 9)); // JST
-}
-
-// --- ヘルパー関数ココマデ ---
-
-let isAnnouncingVoice = false; // 読み上げ中のフラグ
 
 // 現在時刻のアナウンスを鳴らす関数
 // asyncで非同期関数にする．awaitが使えるようになる．
@@ -187,6 +197,10 @@ function startScheduler() {
 
     tick(); // 初回のループを起動
 }
+
+// ==========================================
+// 5. Entry Point
+// ==========================================
 
 playButton.addEventListener('click', async () => {
     // ブラウザの制約への対応：ユーザーがボタンを押したタイミングでAudioContextを起動・再開する．
