@@ -69,13 +69,13 @@ const HOUR_PULSE_FREQ = 1500
 const audioBufferCache = {}; // デコード済みの波形データのキャッシュ
 let isAnnouncingVoice = false; // 読み上げ中のフラグ
 
+let station = document.querySelector('input[name="stationButton"]:checked').value;
 const stationButtons = document.getElementsByName('stationButton');
-let station = 'h';
-for (let i = 0; i < stationButtons.length; i++) {
-    if (stationButtons.item(i).checked) {
-        station = stationButtons.item(i).value;
-        break;
-    }
+for (const radio of stationButtons) {
+    radio.addEventListener('change', (event) => {
+        station = event.target.value;
+        console.log(`Station changed to: ${station}`);
+    });
 }
 
 // ==========================================
