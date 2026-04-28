@@ -52,6 +52,17 @@ function playSignalSound(fileName) {
 const playButton = document.getElementById('playButton');
 const beepGen = new BeepGenerator();
 
+// 音声ファイルへのパスを組み立てるヘルパー関数
+function getVoicePath(station, clipName) {
+    const basePath = './voice_clips/'
+    return `${basePath}${station}_${clipName}.mp3`
+}
+
+// 数値が単数形か複数形かを判定して単語に接尾辞を追加するヘルパー関数
+function getPluralSuffix(value, word) {
+    return value === 1 ? word : word + 's'; // 0は一般的に複数形
+}
+
 // asyncで非同期関数にする．awaitが使えるようになる．
 playButton.addEventListener('click', async () => {
     // ブラウザの制約への対応：ユーザーがボタンを押したタイミングでAudioContextを起動・再開する．
@@ -61,12 +72,19 @@ playButton.addEventListener('click', async () => {
 
     const now = new Date();
     const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
 
-    const clips_path = './voice_clips/'
+    // 正しい単位（単数形／複数形）の決定
+    const hourUnit = getPluralSuffix(currentHour, 'hour');
+    const minuteUnit = getPluralSuffix(currentMinute, 'minute');
+
     const playlist = [
-        clips_path + 'v_at_the_tone.mp3',
-        clips_path + `v_${currentHour}.mp3`,
-        clips_path + 'v_hours.mp3'
+        getVoicePath(station='h', clipName='at_the_tone'),
+        getVoicePath(station='h', clipName=`${currentHour}`),
+        getVoicePath(station='h', clipName=`${hourUnit}`),
+        getVoicePath(station='h', clipName=`${currentMinute}`),
+        getVoicePath(station='h', clipName=`${minuteUnit}`),
+        getVoicePath(station='h', clipName='jst')
     ];
 
     console.log('Playing voice sequence...');
