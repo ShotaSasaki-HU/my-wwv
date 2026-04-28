@@ -204,21 +204,16 @@ function startScheduler() {
             const currentMin = exactNow.getMinutes();
             const currentSec = exactNow.getSeconds();
 
-            switch (currentSec) {
-                case 0: // 0秒になった瞬間
+            switch (currentSec) { // currentSecになった瞬間
+                case 0:
                     playBeep();
 
-                    if (currentMin === 29 || currentMin === 59) {
+                    if (currentMin === 0 || currentMin === 30) {
                         playIdent(station);
                     }
                     break;
-                    
-                case 46: // 46秒になった瞬間
-                    if (currentMin !== 29 && currentMin !== 59) {
-                        playVoiceSequence();
-                    } else {
-                        console.log('[Voice] Skipped sequence due to Ident announcement.');
-                    }
+                case 52:
+                    playVoiceSequence();
                     break;
             }
 
