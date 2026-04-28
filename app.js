@@ -65,6 +65,15 @@ const beepGen = new BeepGenerator();
 const audioBufferCache = {}; // デコード済みの波形データのキャッシュ
 let isAnnouncingVoice = false; // 読み上げ中のフラグ
 
+const stationButtons = document.getElementsByName('stationButton');
+let station = 'h';
+for (let i = 0; i < stationButtons.length; i++) {
+    if (stationButtons.item(i).checked) {
+        station = stationButtons.item(i).value;
+        break;
+    }
+}
+
 // ==========================================
 // 3. Helper Functions
 // ==========================================
@@ -93,6 +102,7 @@ function getJSTDate() {
 // ==========================================
 
 // 音声ファイルをダウンロードしWeb Audio API用の波形データに変換してキャッシュする関数
+// asyncがついているので，この関数は「Promiseを返す関数」に自動変換される．
 async function loadAudioBuffer(fileName) {
     if (audioBufferCache[fileName]) {
         return audioBufferCache[fileName];
@@ -148,12 +158,12 @@ async function playVoiceSequence() {
     const minuteUnit = getPluralSuffix(targetMinute, 'minute');
 
     const playlist = [
-        getVoicePath('h', 'at_the_tone'),
-        getVoicePath('h', `${targetHour}`),
-        getVoicePath('h', `${hourUnit}`),
-        getVoicePath('h', `${targetMinute}`),
-        getVoicePath('h', `${minuteUnit}`),
-        getVoicePath('h', 'jst')
+        getVoicePath(station, 'at_the_tone'),
+        getVoicePath(station, `${targetHour}`),
+        getVoicePath(station, `${hourUnit}`),
+        getVoicePath(station, `${targetMinute}`),
+        getVoicePath(station, `${minuteUnit}`),
+        getVoicePath(station, 'jst')
     ];
 
     console.log(`[Voice] Starting sequence for ${targetHour}:${targetMinute}...`);
@@ -168,9 +178,14 @@ async function playVoiceSequence() {
 }
 
 // ビープ音を鳴らす関数
-async function playBeep() {
+function playBeep() {
     console.log('[Beep] 1200Hz Beep at exactly 0 seconds.');
     beepGen.play(1200, 800); // awaitしない．
+}
+
+function playIdent(station) {
+    console.log('[Ident] Announcing identification...');
+    playSignalSound(getVoicePath(station, 'ident_better'));
 }
 
 // 時間を監視する関数
@@ -186,10 +201,26 @@ function startScheduler() {
 
         setTimeout(() => {
             const exactNow = getJSTDate();
+            const currentMin = exactNow.getMinutes();
             const currentSec = exactNow.getSeconds();
 
-            if (currentSec === 0) { playBeep(); } // 0秒になった瞬間 -> ビープ音
-            if (currentSec === 46) { playVoiceSequence(); } // 46秒になった瞬間 -> "At the tone..."
+            switch (currentSec) {
+                case 0: // 0秒になった瞬間
+                    playBeep();
+
+                    if (currentMin === 29 || currentMin === 59) {
+                        playIdent(station);
+                    }
+                    break;
+                    
+                case 46: // 46秒になった瞬間
+                    if (currentMin !== 29 && currentMin !== 59) {
+                        playVoiceSequence();
+                    } else {
+                        console.log('[Voice] Skipped sequence due to Ident announcement.');
+                    }
+                    break;
+            }
 
             tick(); // 再帰呼び出しによる無限ループ
         }, delayToNextSecond);
@@ -217,12 +248,12 @@ playButton.addEventListener('click', async () => {
     // よく使う音声を事前にメモリへ読み込み
     console.log("Preloading common audio files...");
     const commonFiles = [
-        getVoicePath('h', 'at_the_tone'),
-        getVoicePath('h', 'hour'),
-        getVoicePath('h', 'hours'),
-        getVoicePath('h', 'minute'),
-        getVoicePath('h', 'minutes'),
-        getVoicePath('h', 'jst')
+        getVoicePath(station, 'at_the_tone'),
+        getVoicePath(station, 'hour'),
+        getVoicePath(station, 'hours'),
+        getVoicePath(station, 'minute'),
+        getVoicePath(station, 'minutes'),
+        getVoicePath(station, 'jst')
     ];
     Promise.all(commonFiles.map(file => loadAudioBuffer(file))) // 並列で一気にロード
         .then(() => console.log("Preload complete."));
