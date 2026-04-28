@@ -61,7 +61,11 @@ class BeepGenerator {
 // 2. Global State & Instances
 // ==========================================
 const playButton = document.getElementById('playButton');
+
 const beepGen = new BeepGenerator();
+const pulseFreq = {'v': 1000, 'h': 1200}
+const HOUR_PULSE_FREQ = 1500
+
 const audioBufferCache = {}; // デコード済みの波形データのキャッシュ
 let isAnnouncingVoice = false; // 読み上げ中のフラグ
 
@@ -177,12 +181,6 @@ async function playVoiceSequence() {
     isAnnouncingVoice = false;
 }
 
-// ビープ音を鳴らす関数
-function playBeep() {
-    console.log('[Beep] 1200Hz Beep at exactly 0 seconds.');
-    beepGen.play(1200, 800); // awaitしない．
-}
-
 function playIdent(station) {
     console.log('[Ident] Announcing identification...');
     playSignalSound(getVoicePath(station, 'ident_better'));
@@ -204,9 +202,13 @@ function startScheduler() {
             const currentMin = exactNow.getMinutes();
             const currentSec = exactNow.getSeconds();
 
-            switch (currentSec) { // currentSecになった瞬間
+            switch (currentSec) { // currentSec秒になった瞬間
                 case 0:
-                    playBeep();
+                    if (currentMin === 0) {
+                        beepGen.play(HOUR_PULSE_FREQ, 800);
+                    } else {
+                        beepGen.play(pulseFreq[station], 800);
+                    }
 
                     if (currentMin === 0 || currentMin === 30) {
                         playIdent(station);
