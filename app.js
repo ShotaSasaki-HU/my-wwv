@@ -53,32 +53,49 @@ class BeepGenerator {
     }
 }
 
-// 音声ファイルを1つ鳴らす関数．awaitのためにPromiseのインスタンスを返す．
-const audioCache = {}; // 音声のキャッシュ
+// 音声ファイルをダウンロードしWeb Audio API用の波形データに変換してキャッシュする関数
+const audioBufferCache = {}; // デコード済みの波形データのキャッシュ
+async function loadAudioBuffer(fileName) {
+    if (audioBufferCache[fileName]) {
+        return audioBufferCache[fileName];
+    }
+
+    try {
+        const response = await fetch(fileName);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await beepGen.audioCtx.decodeAudioData(arrayBuffer); // audioCtxはbeepGenから拝借
+        audioBufferCache[fileName] = audioBuffer;
+        return audioBuffer;
+    } catch (error) {
+        console.error("Failed to load or decode audio:", fileName, error);
+        return null;
+    }
+}
+
+// キャッシュされた波形データを使って音声を再生する関数
+// awaitのためにPromiseのインスタンスを返す．
 function playSignalSound(fileName) {
-    // Promiseは，非同期処理の状態や結果を表現するオブジェクト．
-    return new Promise((resolve) => {
-        if (!audioCache[fileName]) {
-            audioCache[fileName] = new Howl({
-                src: [fileName],
-                preload: true,
-                // もし読み込みや再生中にエラーが起きても，isAnnouncingVoiceがスタックしないよう強制的にresolveして次に進める．
-                onloaderror: () => { console.warn('Load Error:', fileName); resolve(); },
-                onplayerror: () => { console.warn('Play Error:', fileName); resolve(); }
-            });
+    return new Promise(async (resolve) => {
+        const buffer = await loadAudioBuffer(fileName); // 音声データ
+
+        if (!buffer) {
+            resolve(); // 読み込み失敗時はスキップして次へ
+            return;
         }
 
-        const sound = audioCache[fileName];
+        const source = beepGen.audioCtx.createBufferSource(); // 音声データの再生機
+        source.buffer = buffer;
+        source.connect(beepGen.audioCtx.destination);
 
-        sound.once('end', () => { resolve(); }); // onceにより，コールバック関数は一度使用したら破棄する．onだとどんどん溜まっていく．
-        sound.play();
+        source.onended = () => { resolve(); }; // 再生終了時のイベント
+        source.start(); // 再生開始
     });
 }
 
-// --- メイン処理ココカラ ---
-
 const playButton = document.getElementById('playButton');
 const beepGen = new BeepGenerator();
+
+// --- ヘルパー関数ココカラ ---
 
 // 音声ファイルへのパスを組み立てるヘルパー関数
 function getVoicePath(station, clipName) {
@@ -98,6 +115,8 @@ function getJSTDate() {
     const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
     return new Date(utcTime + (60 * 60 * 1000 * 9)); // JST
 }
+
+// --- ヘルパー関数ココマデ ---
 
 let isAnnouncingVoice = false; // 読み上げ中のフラグ
 
@@ -158,7 +177,6 @@ function startScheduler() {
         setTimeout(() => {
             const exactNow = getJSTDate();
             const currentSec = exactNow.getSeconds();
-            console.log(currentSec);
 
             if (currentSec === 0) { playBeep(); } // 0秒になった瞬間 -> ビープ音
             if (currentSec === 46) { playVoiceSequence(); } // 46秒になった瞬間 -> "At the tone..."
@@ -182,7 +200,18 @@ playButton.addEventListener('click', async () => {
     playButton.disabled = true;
     playButton.innerText = "Monitoring time...";
 
+    // よく使う音声を事前にメモリへ読み込み
+    console.log("Preloading common audio files...");
+    const commonFiles = [
+        getVoicePath('h', 'at_the_tone'),
+        getVoicePath('h', 'hour'),
+        getVoicePath('h', 'hours'),
+        getVoicePath('h', 'minute'),
+        getVoicePath('h', 'minutes'),
+        getVoicePath('h', 'jst')
+    ];
+    Promise.all(commonFiles.map(file => loadAudioBuffer(file))) // 並列で一気にロード
+        .then(() => console.log("Preload complete."));
+
     startScheduler(); // 監視スタート
 });
-
-// --- メイン処理ココマデ ---
