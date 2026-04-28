@@ -1,3 +1,5 @@
+// app.js
+
 // Web Audio APIを使ったビープ音生成クラス
 class BeepGenerator {
     constructor() {
@@ -35,7 +37,7 @@ class BeepGenerator {
     }
 }
 
-// 音を1つ鳴らして終わるまで待つ関数．Promiseのインスタンスを返す．
+// 音声ファイルを1つ鳴らす関数．awaitのためにPromiseのインスタンスを返す．
 function playSignalSound(fileName) {
     // Promiseは，非同期処理の状態や結果を表現するオブジェクト．
     return new Promise((resolve) => {
@@ -63,31 +65,35 @@ function getPluralSuffix(value, word) {
     return value === 1 ? word : word + 's'; // 0は一般的に複数形
 }
 
+let isAnnouncingVoice = false; // 読み上げ中のフラグ
+
+// 現在時刻のアナウンスを鳴らす関数
 // asyncで非同期関数にする．awaitが使えるようになる．
-playButton.addEventListener('click', async () => {
-    // ブラウザの制約への対応：ユーザーがボタンを押したタイミングでAudioContextを起動・再開する．
-    if (beepGen.audioCtx.state === 'suspended') {
-        await beepGen.audioCtx.resume();
-    }
+async function playVoiceSequence() {
+    if (isAnnouncingVoice) { return; }; // 既に読み上げ中なら，新しい読み上げはキャンセルする．
+    isAnnouncingVoice = true;
 
     const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    // 声は「0秒より前」に鳴り始めるため，読み上げるべき時間は「次の分」である．
+    now.setMinutes(now.getMinutes() + 1);
+
+    const targetHour = now.getHours();
+    const targetMinute = now.getMinutes();
 
     // 正しい単位（単数形／複数形）の決定
-    const hourUnit = getPluralSuffix(currentHour, 'hour');
-    const minuteUnit = getPluralSuffix(currentMinute, 'minute');
+    const hourUnit = getPluralSuffix(targetHour, 'hour');
+    const minuteUnit = getPluralSuffix(targetMinute, 'minute');
 
     const playlist = [
         getVoicePath('h', 'at_the_tone'),
-        getVoicePath('h', `${currentHour}`),
+        getVoicePath('h', `${targetHour}`),
         getVoicePath('h', `${hourUnit}`),
-        getVoicePath('h', `${currentMinute}`),
+        getVoicePath('h', `${targetMinute}`),
         getVoicePath('h', `${minuteUnit}`),
         getVoicePath('h', 'jst')
     ];
 
-    console.log('Playing voice sequence...');
+    console.log(`[Voice] Starting sequence for ${targetHour}:${targetMinute}...`);
 
     for (const fileName of playlist) {
         // awaitは，Promiseオブジェクトが値を返すのを待つ演算子．
@@ -95,11 +101,51 @@ playButton.addEventListener('click', async () => {
         await playSignalSound(fileName);
     }
 
-    console.log('Playing beep...')
+    isAnnouncingVoice = false;
+}
 
-    await beepGen.play(1200, 800); // 毎分のビープ音: 1000Hz, 800ms
+// ビープ音を鳴らす関数
+async function playBeep() {
+    console.log('[Beep] 1200Hz Beep at exactly 0 seconds.');
+    beepGen.play(1200, 800); // awaitしない．
+}
 
-    console.log('Announcement finished.');
+// 時間を監視する関数
+function startScheduler() {
+    console.log("Scheduler started...");
+
+    function tick() {
+        const now = new Date();
+        const seconds = now.getSeconds();
+        const ms = now.getMilliseconds();
+
+        const delayToNextSecond = 1000 - ms; // 次に秒数が切り替わるピッタリまでのミリ秒
+
+        setTimeout(() => {
+            const exactNow = new Date();
+            const currentSec = exactNow.getSeconds();
+            console.log(currentSec);
+
+            if (currentSec === 0) { playBeep(); } // 0秒になった瞬間 -> ビープ音
+            if (currentSec === 46) { playVoiceSequence(); } // 46秒になった瞬間 -> "At the tone..."
+
+            tick(); // 再帰呼び出しによる無限ループ
+        }, delayToNextSecond);
+    }
+
+    tick(); // 初回のループを起動
+}
+
+playButton.addEventListener('click', async () => {
+    // ブラウザの制約への対応：ユーザーがボタンを押したタイミングでAudioContextを起動・再開する．
+    if (beepGen.audioCtx.state === 'suspended') {
+        await beepGen.audioCtx.resume();
+    }
+
+    playButton.disabled = true;
+    playButton.innerText = "Monitoring time...";
+
+    startScheduler(); // 監視スタート
 });
 
 // --- メイン処理ココマデ ---
