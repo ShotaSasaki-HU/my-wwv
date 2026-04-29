@@ -1,4 +1,4 @@
-# my-wwh
+# my-wwv
 時間の見当識をサポートする時報アプリ
 
 https://shotasasaki-hu.github.io/my-wwv/
