@@ -267,9 +267,26 @@ document.addEventListener('visibilitychange', async () => {
     }
 });
 
+// iOS Safariのアクセシビリティによる強制ズーム（ピンチ・ダブルタップ）をイベントリスナーへの介入によってプログラム的に無効化する．
+function preventIosZoom() {
+    // ピンチイン・ピンチアウト（複数の指でのタッチ操作）の無効化
+    document.addEventListener('touchmove', (event) => {
+        if (event.touches.length > 1) {
+            event.preventDefault(); // デフォルトの拡大縮小処理をキャンセル
+        }
+    }, { passive: false }); // preventDefaultを機能させるため，明示的にpassiveをfalseにする．
+
+    // Safari独自のジェスチャーイベント（予期せぬズーム）の無効化
+    document.addEventListener('gesturestart', (event) => {
+        event.preventDefault();
+    });
+}
+
 // ==========================================
 // 5. Entry Point
 // ==========================================
+
+preventIosZoom();
 
 // ページを開いた瞬間から時計だけは動かしておく．
 setInterval(updateLiveClock, 1000);
