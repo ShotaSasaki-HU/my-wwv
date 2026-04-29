@@ -63,7 +63,7 @@ class BeepGenerator {
 const playButton = document.getElementById('playButton');
 
 const beepGen = new BeepGenerator();
-const pulseFreq = {'v': 1000, 'h': 1200}
+const pulseFreq = { 'v': 1000, 'h': 1200 }
 const HOUR_PULSE_FREQ = 1500
 
 const audioBufferCache = {}; // デコード済みの波形データのキャッシュ
@@ -79,6 +79,8 @@ for (const radio of stationButtons) {
 }
 
 const clockTimeDisplay = document.getElementById('clock-time');
+
+let wakeLock = null;
 
 // ==========================================
 // 3. Helper Functions
@@ -239,6 +241,32 @@ function startScheduler() {
     tick(); // 初回のループを起動
 }
 
+// 画面が自動でスリープするのを防ぐ機能（Wake Lock API）
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active.');
+
+            // 別のアプリを開くなどしてWake Lockが解除された場合の再取得設定
+            wakeLock.addEventListener('release', () => {
+                console.log('Screen Wake Lock was released.');
+            });
+        } else {
+            console.warn('Screen Wake Lock API is not supported on this browser.');
+        }
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+// ユーザーが別のタブに移動して戻ってきた時に，Wake Lockをかけ直す．
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+    }
+});
+
 // ==========================================
 // 5. Entry Point
 // ==========================================
@@ -271,6 +299,9 @@ playButton.addEventListener('click', async () => {
     ];
     Promise.all(commonFiles.map(file => loadAudioBuffer(file))) // 並列で一気にロード
         .then(() => console.log("Preload complete."));
+
+    // 監視スタート時に画面スリープ防止をオンにする．
+    await requestWakeLock();
 
     startScheduler(); // 監視スタート
 });
