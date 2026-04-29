@@ -17,14 +17,18 @@ class BeepGenerator {
         if (this.keepAliveOsc) return; // 既に動いていたら何もしない．
 
         this.keepAliveOsc = this.audioCtx.createOscillator();
-        const silentGain = this.audioCtx.createGain();
+        const trickGain = this.audioCtx.createGain();
 
-        silentGain.gain.value = 0; // 無音
+        // 誰にも聞こえない超低周波（1Hz）を，ごく僅かな音量で鳴らし続ける．
+        this.keepAliveOsc.type = 'sine';
+        this.keepAliveOsc.frequency.value = 1; 
+        trickGain.gain.value = 0.01;
 
-        this.keepAliveOsc.connect(silentGain);
-        silentGain.connect(this.audioCtx.destination);
+        this.keepAliveOsc.connect(trickGain);
+        trickGain.connect(this.audioCtx.destination);
 
-        this.keepAliveOsc.start(); // 無音を永遠に再生し続ける．
+        this.keepAliveOsc.start(); // 永遠に再生
+        console.log("Keep-alive infrasound started.");
     }
 
     /**
@@ -251,6 +255,10 @@ function startScheduler() {
             lastHandledSecond = currentSec;
 
             updateLiveClock(); // 時計の表示を更新
+
+            if (beepGen.audioCtx.state === 'suspended' || beepGen.audioCtx.state === 'interrupted') {
+                beepGen.audioCtx.resume();
+            }
 
             switch (currentSec) { // currentSec秒になった瞬間
                 case 0:
