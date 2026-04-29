@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -13,7 +14,8 @@
             --card-bg: #1e1e26;
             --text-main: #e0e0e0;
             --text-muted: #888899;
-            --accent-color: #00e5ff; /* 電波をイメージしたシアン */
+            --accent-color: #00e5ff;
+            /* 電波をイメージしたシアン */
             --active-bg: rgba(0, 229, 255, 0.1);
         }
 
@@ -28,8 +30,10 @@
             margin: 0;
             overflow: hidden;
             touch-action: none;
-            -webkit-user-select: none; /* テキストの長押し選択を禁止（iOS Safari用） */
-            user-select: none; /* テキストの長押し選択を禁止 */
+            -webkit-user-select: none;
+            /* テキストの長押し選択を禁止（iOS Safari用） */
+            user-select: none;
+            /* テキストの長押し選択を禁止 */
         }
 
         /* ==========================================
@@ -77,7 +81,8 @@
         }
 
         .station-selector input[type="radio"] {
-            display: none; /* デフォルトの丸いボタンを隠す */
+            display: none;
+            /* デフォルトの丸いボタンを隠す */
         }
 
         .station-selector label {
@@ -92,7 +97,7 @@
         }
 
         /* 選択されている時のスタイル */
-        .station-selector input[type="radio"]:checked + label {
+        .station-selector input[type="radio"]:checked+label {
             background-color: var(--active-bg);
             color: var(--accent-color);
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -131,13 +136,22 @@
             cursor: default;
             transform: none;
             box-shadow: 0 0 15px var(--active-bg);
-            animation: pulse 2s infinite; /* 監視中を示すゆっくりとした点滅 */
+            animation: pulse 2s infinite;
+            /* 監視中を示すゆっくりとした点滅 */
         }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(0, 229, 255, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 229, 255, 0);
+            }
         }
 
         /* ==========================================
@@ -153,7 +167,8 @@
         #clock-time {
             font-size: 3.2rem;
             font-weight: 700;
-            font-family: 'Courier New', Courier, monospace; /* デジタル感 */
+            font-family: 'Courier New', Courier, monospace;
+            /* デジタル感 */
             color: var(--accent-color);
             line-height: 1;
             display: block;
@@ -173,8 +188,30 @@
             margin-bottom: 30px;
             letter-spacing: 1px;
         }
+
+        /* ==========================================
+           7. Footer Link (GitHubアイコン)
+        ========================================== */
+        .footer-link {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .gh {
+            width: 32px; /* 120pxは少し大きすぎるので上品なサイズに縮小 */
+            height: auto;
+            opacity: 0.4; /* 普段は控えめな透明度に */
+            transition: all 0.3s ease;
+            filter: invert(1); /* 黒い画像を強制的に「白」に反転させる */
+        }
+
+        .gh:hover {
+            opacity: 1; /* マウスを乗せるとくっきり表示される */
+            transform: scale(1.1); /* 少しだけフワッと大きくする遊び心 */
+        }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -197,9 +234,16 @@
             </div>
 
             <button id="playButton">Start Monitoring</button>
+
+            <div class="footer-link">
+                <a href="https://github.com/shotasasaki-hu/my-wwv" target="_blank" rel="noopener noreferrer" title="View Source on GitHub">
+                    <img class="gh" src="./images/GitHub-Mark-120px-plus.png" alt="GitHub project" />
+                </a>
+            </div>
         </main>
     </div>
 
     <script src="app.js"></script>
 </body>
+
 </html>
