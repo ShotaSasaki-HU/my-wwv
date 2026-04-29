@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WWV Time Signal</title>
     <style>
         /* ==========================================
@@ -27,6 +27,9 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            touch-action: manipulation; /* ダブルタップによるズームを禁止 */
+            -webkit-user-select: none; /* テキストの長押し選択を禁止（iOS Safari用） */
+            user-select: none; /* テキストの長押し選択を禁止 */
         }
 
         /* ==========================================
