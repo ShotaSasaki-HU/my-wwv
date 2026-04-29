@@ -115,6 +115,37 @@ function updateLiveClock() {
 }
 
 // ==========================================
+// 3.5 Web Worker (バックグラウンドタイマー)
+// ==========================================
+// メインスレッド（UI）が寝かされても別スレッドで正確に時を刻み続ける専用ワーカー
+// CORSエラー回避のため，ファイルは1つにまとめたまま，ブラウザには別ファイルとして読み込ませる．
+const workerCode = `
+    let timerId = null;
+    function tick() {
+        // 次の0.000秒ぴったりまでの残りミリ秒を計算して待機
+        const now = new Date(); // タイムゾーンに依存しない．
+        const delay = 1000 - now.getMilliseconds();
+        
+        timerId = setTimeout(() => {
+            postMessage('tick'); // メインスレッドに「時間だよ！」と通知
+            tick(); // 無限ループ
+        }, delay);
+    }
+
+    // メインスレッドからの指示を受け取る．
+    self.onmessage = function(e) {
+        if (e.data === 'start') {
+            tick();
+        } else if (e.data === 'stop') {
+            clearTimeout(timerId);
+        }
+    };
+`;
+// 文字列をJavaScriptファイルとしてブラウザに認識させる．
+const blob = new Blob([workerCode], { type: 'application/javascript' });
+const timerWorker = new Worker(URL.createObjectURL(blob));
+
+// ==========================================
 // 4. Core Logic
 // ==========================================
 
@@ -201,19 +232,23 @@ function playIdent(station) {
 
 // 時間を監視する関数
 function startScheduler() {
-    console.log("Scheduler started...");
+    console.log("Scheduler started with Web Worker...");
 
-    function tick() {
-        const now = getJSTDate();
-        const seconds = now.getSeconds();
-        const ms = now.getMilliseconds();
+    // 念のための重複実行防止フラグ
+    // JSの「クロージャ」により，関数の中に作られたコールバック関数（timerWorker.onmessage）は，
+    // 元環境の変数を保持するため前回のlastHandledSecondが消えない．
+    // startScheduler自体はガベージコレクションされるが，このフラグはコールバック関数に紐付けて残される．
+    let lastHandledSecond = -1;
 
-        const delayToNextSecond = 1000 - ms; // 次に秒数が切り替わるピッタリまでのミリ秒
-
-        setTimeout(() => {
+    timerWorker.onmessage = function (e) {
+        if (e.data === 'tick') {
             const exactNow = getJSTDate();
             const currentMin = exactNow.getMinutes();
             const currentSec = exactNow.getSeconds();
+
+            // 同じ秒数で2回発火するのを防止
+            if (currentSec === lastHandledSecond) return;
+            lastHandledSecond = currentSec;
 
             updateLiveClock(); // 時計の表示を更新
 
@@ -233,12 +268,11 @@ function startScheduler() {
                     playVoiceSequence();
                     break;
             }
+        }
+    };
 
-            tick(); // 再帰呼び出しによる無限ループ
-        }, delayToNextSecond);
-    }
-
-    tick(); // 初回のループを起動
+    // ワーカーに計測開始を指示
+    timerWorker.postMessage('start');
 }
 
 // 画面が自動でスリープするのを防ぐ機能（Wake Lock API）
