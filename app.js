@@ -260,12 +260,36 @@ async function requestWakeLock() {
     }
 }
 
-// ユーザーが別のタブに移動して戻ってきた時に，Wake Lockをかけ直す．
+// 画面が再び表示された（ロック解除された）時に発火するイベント
 document.addEventListener('visibilitychange', async () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
-        await requestWakeLock();
+    if (document.visibilityState === 'visible') {
+        console.log("App became visible again.");
+
+        // 1. 画面スリープ防止（Wake Lock）が切れていたら再取得
+        if (typeof wakeLock !== 'undefined' && wakeLock !== null) {
+            requestWakeLock();
+        }
+
+        // 2. オーディオエンジンがスリープさせられていたら叩き起こす．
+        if (beepGen.audioCtx.state === 'suspended' || beepGen.audioCtx.state === 'interrupted') {
+            try {
+                await beepGen.audioCtx.resume();
+                console.log("AudioContext resumed on visibility change.");
+            } catch (e) {
+                console.error("Failed to resume AudioContext:", e);
+            }
+        }
     }
 });
+
+// ユーザーが画面の「どこか」をタッチした瞬間に確実にオーディオエンジンを再開させる．
+document.addEventListener('touchstart', () => {
+    if (beepGen.audioCtx.state === 'suspended' || beepGen.audioCtx.state === 'interrupted') {
+        beepGen.audioCtx.resume().then(() => {
+            console.log("AudioContext resumed by user touch.");
+        });
+    }
+}, { passive: true });
 
 // iOS Safariのアクセシビリティによる強制ズーム（ピンチ・ダブルタップ）をイベントリスナーへの介入によってプログラム的に無効化する．
 function preventIosZoom() {
