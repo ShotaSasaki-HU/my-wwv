@@ -26,8 +26,10 @@ https://shotasasaki-hu.github.io/my-wwv/
 - **音声のエイジング**: AIで生成したクリアな音声をあえて劣化させ、実際のナレーター風の質感に加工しています。
 
 ## クレジット（Credits）
-本アプリで使用しているベースの音声ファイル（`at_the_tone`や数値の読み上げなど）は、以下の素晴らしいリポジトリから拝借しています。
-- [kalafut/wwv](https://github.com/kalafut/wwv) (WWV Simulator)
+本アプリで使用しているベースの音声ファイルは、以下のリポジトリから拝借しています。
+- [kalafut/wwv](https://github.com/kalafut/wwv) (WWV Simulator)<br>
+  Copyright (c) 2019 Jim Kalafut<br>
+  Licensed under the MIT License.
 
 ## 音声素材 `h_jst.mp3` の生成
 本アプリの特徴である"Japan Standard Time."の音声は、以下の手順で作成されました。
