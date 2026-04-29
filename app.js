@@ -78,6 +78,8 @@ for (const radio of stationButtons) {
     });
 }
 
+const clockTimeDisplay = document.getElementById('clock-time');
+
 // ==========================================
 // 3. Helper Functions
 // ==========================================
@@ -99,6 +101,15 @@ function getJSTDate() {
     // getTimezoneOffset()はUTCとの差分を「分」で返すため，ミリ秒に変換して加算する．
     const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
     return new Date(utcTime + (60 * 60 * 1000 * 9)); // JST
+}
+
+// 時計の表示を更新する関数
+function updateLiveClock() {
+    const now = getJSTDate();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    clockTimeDisplay.innerText = `${h}:${m}:${s}`;
 }
 
 // ==========================================
@@ -202,6 +213,8 @@ function startScheduler() {
             const currentMin = exactNow.getMinutes();
             const currentSec = exactNow.getSeconds();
 
+            updateLiveClock(); // 時計の表示を更新
+
             switch (currentSec) { // currentSec秒になった瞬間
                 case 0:
                     if (currentMin === 0) {
@@ -229,6 +242,10 @@ function startScheduler() {
 // ==========================================
 // 5. Entry Point
 // ==========================================
+
+// ページを開いた瞬間から時計だけは動かしておく．
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
 
 playButton.addEventListener('click', async () => {
     // ブラウザの制約への対応：ユーザーがボタンを押したタイミングでAudioContextを起動・再開する．
